@@ -1,0 +1,56 @@
+{
+  "participant_id": "20260716_151702_22",
+  "responses": [
+    {
+      "app_version": "participant",
+      "participant_id": "20260716_151702_22",
+      "index": 1,
+      "sequence": "OverallBall_take1",
+      "video_a": "OverallBall_take1_frame00492_same_file_size_256x_3dgs.mp4",
+      "video_b": "OverallBall_take1_frame00492_same_file_size_256x_pointcloud.mp4",
+      "choice": "B",
+      "selected_video": "OverallBall_take1_frame00492_same_file_size_256x_pointcloud.mp4",
+      "confidence": 3,
+      "comment": "",
+      "time_used_seconds": 32.36,
+      "timestamp": "2026-07-16T15:18:36.942236"
+    },
+    {
+      "app_version": "participant",
+      "participant_id": "20260716_151702_22",
+      "index": 2,
+      "sequence": "OverallBall_take1",
+      "video_a": "OverallBall_take1_frame00492_same_NoP_4x_pointcloud.mp4",
+      "video_b": "OverallBall_take1_frame00492_same_NoP_4x_3dgs.mp4",
+      "choice": "B",
+      "selected_video": "OverallBall_take1_frame00492_same_NoP_4x_3dgs.mp4",
+      "confidence": 5,
+      "comment": "",
+      "time_used_seconds": 38.7,
+      "timestamp": "2026-07-16T15:19:18.403323"
+    },
+    {
+      "app_version": "participant",
+      "participant_id": "20260716_151702_22",
+      "index": 3,
+      "sequence": "TicTacToe_take2",
+      "video_a": "TicTacToe_take2_frame00586_same_file_size_32x_3dgs.mp4",
+      "video_b": "TicTacToe_take2_frame00586_same_file_size_32x_pointcloud.mp4",
+      "choice": "B",
+      "selected_video": "TicTacToe_take2_frame00586_same_file_size_32x_pointcloud.mp4",
+      "confidence": 5,
+      "comment": "",
+      "time_used_seconds": 39.53,
+      "timestamp": "2026-07-16T15:20:00.412531"
+    }
+  ],
+  "app_version": "participant",
+  "demographics": {
+    "age_group": "35-44",
+    "sex": "Male",
+    "occupation": "Researcher / Academic staff",
+    "expertise_level": "Advanced",
+    "country_region": "Africa",
+    "nationality_or_region": "Africa"
+  }
+}

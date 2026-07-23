@@ -1,0 +1,26 @@
+# Streamlit secrets (sensitive credentials)
+.streamlit/secrets.toml
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# Old CSV files (responses now stored in Google Sheets)
+participantID.csv
+survey_responses*.csv
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

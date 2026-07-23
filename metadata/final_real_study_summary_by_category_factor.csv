@@ -1,0 +1,8 @@
+regime,factor,rows,pc_total_size_mib,gs_total_size_mib,pc_total_primitives,gs_total_primitives
+same_NoP,256x,5,1.376,12.024,53391,53391
+same_NoP,32x,5,11.0,96.142,427141,427141
+same_NoP,4x,5,87.99,769.094,3417145,3417145
+same_NoP,original,5,351.956,3076.358,13668588,13668588
+same_file_size,256x,5,0.158,1.383,6110,6110
+same_file_size,32x,5,1.26,11.006,48868,48868
+same_file_size,4x,5,10.067,87.995,390944,390944
