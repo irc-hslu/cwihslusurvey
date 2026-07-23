@@ -16,13 +16,19 @@ SCOPES = [
 WORKSHEET_RESPONSES = "responses"
 WORKSHEET_ANALYSIS = "responses_analysis"
 WORKSHEET_DEMOGRAPHICS = "demographics"
-WORKSHEET_METADATA = "_metadata"
-METADATA_COUNTER_CELL = "A1"
+
+REQUIRED_WORKSHEETS = (
+    WORKSHEET_RESPONSES,
+    WORKSHEET_ANALYSIS,
+    WORKSHEET_DEMOGRAPHICS,
+)
 
 
 def is_configured() -> bool:
     try:
-        return bool(st.secrets.get("spreadsheet_name")) and bool(st.secrets.get("gcp_service_account"))
+        has_account = bool(st.secrets.get("gcp_service_account"))
+        has_target = bool(st.secrets.get("spreadsheet_id") or st.secrets.get("spreadsheet_name"))
+        return has_account and has_target
     except Exception:
         return False
 
@@ -30,8 +36,8 @@ def is_configured() -> bool:
 def _require_config():
     if not is_configured():
         raise RuntimeError(
-            "Google Sheets storage is not configured. Add spreadsheet_name and "
-            "gcp_service_account to Streamlit secrets (see GOOGLE_SHEETS_SETUP.md)."
+            "Google Sheets storage is not configured. Add spreadsheet_name (or spreadsheet_id) "
+            "and gcp_service_account to Streamlit secrets (see GOOGLE_SHEETS_SETUP.md)."
         )
 
 
@@ -51,6 +57,9 @@ def _spreadsheet():
     import gspread
 
     client = gspread.authorize(_credentials())
+    spreadsheet_id = st.secrets.get("spreadsheet_id")
+    if spreadsheet_id:
+        return client.open_by_key(spreadsheet_id)
     return client.open(st.secrets["spreadsheet_name"])
 
 
@@ -61,23 +70,64 @@ def _drive_service():
     return build("drive", "v3", credentials=_credentials(), cache_discovery=False)
 
 
-def _worksheet(name: str, headers: list[str] | None = None):
+def _format_api_error(exc: Exception) -> str:
+    response = getattr(exc, "response", None)
+    if response is not None:
+        try:
+            return json.dumps(response.json(), indent=2)
+        except Exception:
+            return getattr(response, "text", str(exc))
+    return str(exc)
+
+
+def _find_worksheet(spreadsheet, name: str):
     from gspread.exceptions import WorksheetNotFound
 
-    spreadsheet = _spreadsheet()
     try:
-        worksheet = spreadsheet.worksheet(name)
+        return spreadsheet.worksheet(name)
     except WorksheetNotFound:
-        rows = 1
-        cols = max(len(headers or []), 1)
-        worksheet = spreadsheet.add_worksheet(title=name, rows=rows, cols=cols)
+        pass
+
+    target = name.strip().lower()
+    for worksheet in spreadsheet.worksheets():
+        if worksheet.title.strip().lower() == target:
+            return worksheet
+    return None
+
+
+def _worksheet(name: str, headers: list[str] | None = None):
+    from gspread.exceptions import APIError
+
+    spreadsheet = _spreadsheet()
+    worksheet = _find_worksheet(spreadsheet, name)
+    if worksheet is None:
+        try:
+            worksheet = spreadsheet.add_worksheet(
+                title=name,
+                rows=max(1000, 2),
+                cols=max(len(headers or []), 26),
+            )
+        except APIError as exc:
+            spreadsheet_label = st.secrets.get("spreadsheet_name") or st.secrets.get("spreadsheet_id")
+            raise RuntimeError(
+                f"Worksheet '{name}' was not found in spreadsheet '{spreadsheet_label}', "
+                f"and the app could not create it automatically.\n\n"
+                "Fix:\n"
+                "1. Open the Google Sheet and manually add tabs named "
+                "`responses`, `responses_analysis`, and `demographics`.\n"
+                "2. Share the spreadsheet with your service account email as Editor.\n"
+                "3. Confirm Google Sheets API is enabled for the service account project.\n\n"
+                f"Google API response:\n{_format_api_error(exc)}"
+            ) from exc
 
     if headers:
         existing = worksheet.row_values(1)
         if not existing:
-            worksheet.update("A1", [headers], value_input_option="USER_ENTERED")
-        elif existing != headers:
-            worksheet.update("A1", [headers], value_input_option="USER_ENTERED")
+            worksheet.update(
+                values=[headers],
+                range_name="A1",
+                value_input_option="USER_ENTERED",
+            )
     return worksheet
 
 
@@ -97,15 +147,6 @@ def append_row(worksheet_name: str, row: dict, columns: list[str]) -> None:
         _row_values(row, columns),
         value_input_option="USER_ENTERED",
     )
-
-
-def next_participant_index() -> int:
-    worksheet = _worksheet(WORKSHEET_METADATA)
-    raw_value = worksheet.acell(METADATA_COUNTER_CELL).value
-    current = int(raw_value) if raw_value and str(raw_value).strip().isdigit() else 0
-    next_index = current + 1
-    worksheet.update_acell(METADATA_COUNTER_CELL, str(next_index))
-    return current
 
 
 def save_participant_json(participant_id: str, participant_data: dict) -> None:

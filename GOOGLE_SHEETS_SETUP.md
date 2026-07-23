@@ -25,16 +25,13 @@ This file documents the secrets you need to configure in Streamlit Cloud for Goo
 1. Go to [Google Sheets](https://sheets.google.com/)
 2. Create a new spreadsheet
 3. Give it a name (e.g., "CWI-HSLU Quality Survey Responses")
-4. **Important:** Share the spreadsheet with the service account email (found in the JSON file as `client_email`), giving it **Editor** access
+4. **Manually create these worksheet tabs** (exact names):
+   - `responses`
+   - `responses_analysis`
+   - `demographics`
+5. **Important:** Share the spreadsheet with the service account email (found in the JSON file as `client_email`), giving it **Editor** access
 
-The app creates these worksheets automatically on first save:
-
-| Worksheet | Purpose |
-|-----------|---------|
-| `responses` | Full trial response data (one row per trial) |
-| `responses_analysis` | Compact analysis columns for quick review |
-| `demographics` | Participant demographic information |
-| `_metadata` | Internal participant counter (cell `A1`) |
+You can delete the default `Sheet1` tab after adding the tabs above, or leave it empty.
 
 ### 3. Create a Google Drive Folder (optional but recommended)
 
@@ -50,6 +47,8 @@ In your Streamlit Cloud app settings, go to **Secrets** and add the following TO
 
 ```toml
 spreadsheet_name = "CWI-HSLU Quality Survey Responses"
+# Optional but recommended: use the spreadsheet ID from the URL for reliable lookup
+# spreadsheet_id = "1abc...xyz"
 drive_folder_id = "your-google-drive-folder-id"
 
 [gcp_service_account]

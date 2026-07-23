@@ -151,10 +151,7 @@ def load_practice_stimuli(stimuli_mtime):
 
 def generate_participant_id():
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    if google_storage.is_configured():
-        participant_index = google_storage.next_participant_index()
-    else:
-        participant_index = random.randint(1000, 9999)
+    participant_index = random.randint(1000, 99999)
     return f"{timestamp}_{participant_index}"
 
 
