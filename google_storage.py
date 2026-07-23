@@ -159,8 +159,6 @@ def append_row(worksheet_name: str, row: dict, columns: list[str]) -> None:
 
 
 def save_participant_json(participant_id: str, participant_data: dict) -> None:
-    from gspread.exceptions import CellNotFound
-
     worksheet = _worksheet(WORKSHEET_PARTICIPANTS, headers=PARTICIPANT_JSON_COLUMNS)
     row = {
         "participant_id": participant_id,
@@ -169,12 +167,13 @@ def save_participant_json(participant_id: str, participant_data: dict) -> None:
     }
     values = _row_values(row, PARTICIPANT_JSON_COLUMNS)
 
-    try:
-        cell = worksheet.find(participant_id, in_column=1)
+    participant_ids = worksheet.col_values(1)
+    if participant_id in participant_ids:
+        row_num = participant_ids.index(participant_id) + 1
         worksheet.update(
             values=[values],
-            range_name=f"A{cell.row}",
+            range_name=f"A{row_num}",
             value_input_option="USER_ENTERED",
         )
-    except CellNotFound:
+    else:
         worksheet.append_row(values, value_input_option="USER_ENTERED")
