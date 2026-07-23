@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
-from functools import lru_cache
 
 import streamlit as st
 
+# spreadsheets: read/write rows
+# drive.readonly: gspread uses Drive API to open a spreadsheet by title
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive.readonly",
 ]
 
 WORKSHEET_RESPONSES = "responses"
@@ -43,31 +45,38 @@ def is_configured() -> bool:
 def _require_config():
     if not is_configured():
         raise RuntimeError(
-            "Google Sheets storage is not configured. Add spreadsheet_name (or spreadsheet_id) "
-            "and gcp_service_account to Streamlit secrets."
+            "Google Sheets storage is not configured. Add spreadsheet_id (recommended) or "
+            "spreadsheet_name, plus gcp_service_account, to Streamlit secrets."
         )
 
 
-@lru_cache(maxsize=1)
-def _credentials():
+@st.cache_resource(show_spinner=False)
+def _gspread_client():
     from google.oauth2.service_account import Credentials
+    import gspread
 
     _require_config()
-    return Credentials.from_service_account_info(
+    credentials = Credentials.from_service_account_info(
         dict(st.secrets["gcp_service_account"]),
         scopes=SCOPES,
     )
+    return gspread.authorize(credentials)
 
 
 @st.cache_resource(show_spinner=False)
 def _spreadsheet():
-    import gspread
-
-    client = gspread.authorize(_credentials())
+    client = _gspread_client()
     spreadsheet_id = st.secrets.get("spreadsheet_id")
     if spreadsheet_id:
         return client.open_by_key(spreadsheet_id)
-    return client.open(st.secrets["spreadsheet_name"])
+
+    spreadsheet_name = st.secrets.get("spreadsheet_name")
+    if spreadsheet_name:
+        return client.open(spreadsheet_name)
+
+    raise RuntimeError(
+        "Missing spreadsheet_id or spreadsheet_name in Streamlit secrets."
+    )
 
 
 def _format_api_error(exc: Exception) -> str:
@@ -116,7 +125,7 @@ def _worksheet(name: str, headers: list[str] | None = None):
                 "1. Open the Google Sheet and manually add tabs named "
                 "`responses`, `responses_analysis`, `demographics`, and `participants_json`.\n"
                 "2. Share the spreadsheet with your service account email as Editor.\n"
-                "3. Confirm Google Sheets API is enabled for the service account project.\n\n"
+                "3. Confirm Google Sheets API and Google Drive API are enabled.\n\n"
                 f"Google API response:\n{_format_api_error(exc)}"
             ) from exc
 
