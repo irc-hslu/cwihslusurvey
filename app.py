@@ -371,6 +371,86 @@ def get_preference_3dgs(chosen_method):
     return ""
 
 
+def inject_trial_layout_css():
+    st.markdown(
+        """
+        <style>
+          header, footer, #MainMenu { visibility: hidden; }
+          .block-container {
+            max-width: 100% !important;
+            padding: 0 !important;
+          }
+          section.main div[data-testid="stVerticalBlock"] {
+            gap: 0 !important;
+          }
+          .study-title {
+            display: none !important;
+          }
+          .trial-chrome {
+            position: fixed;
+            top: 8px;
+            left: 12px;
+            right: 12px;
+            z-index: 10001;
+            pointer-events: none;
+          }
+          .trial-chrome * {
+            pointer-events: none;
+          }
+          div[data-testid="column"] {
+            position: relative;
+          }
+          div[data-testid="column"] button[kind="secondary"] {
+            width: 100%;
+            height: 100vh !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            z-index: 9999 !important;
+            display: flex !important;
+            max-width: 100% !important;
+            background: none !important;
+            border: 3px solid rgba(128, 128, 128, 0.45) !important;
+            color: transparent !important;
+          }
+          div[data-testid="column"] button[kind="secondary"]:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.04) !important;
+            border: 4px solid rgba(220, 38, 38, 0.85) !important;
+          }
+          div[data-testid="column"] button[kind="secondary"]:disabled {
+            opacity: 0.35 !important;
+            cursor: not-allowed !important;
+          }
+          iframe[title="streamlit_components_v1.components.html"] {
+            border: none !important;
+          }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_trial_choice(key_prefix):
+    col1, col2 = st.columns([1, 1], gap=None)
+    choice = None
+    submitted = False
+    with col1:
+        if st.button(" ", key=f"{key_prefix}_left", type="secondary", use_container_width=True):
+            choice = "Video A is better"
+            submitted = True
+    with col2:
+        if st.button(" ", key=f"{key_prefix}_right", type="secondary", use_container_width=True):
+            choice = "Video B is better"
+            submitted = True
+    return choice, [], submitted
+
+
+def render_trial_screen(left_video, right_video, trial_id, participant_id, key_prefix):
+    choice, artifact_tags, submitted = render_trial_choice(key_prefix)
+    render_synced_videos(left_video, right_video, trial_id, participant_id)
+    return choice, artifact_tags, submitted
+
+
 def show_transition_screen(title, body, primary_label, primary_phase, secondary_label=None, secondary_phase=None):
     st.markdown(
         """
@@ -444,20 +524,48 @@ def render_synced_videos(left_video, right_video, trial_id, participant_id):
     components.html(
         f"""
         <style>
+          html, body {{
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+          }}
           .sync-wrap {{
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: #000;
+            position: relative;
           }}
           .sync-grid {{
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 14px;
-            align-items: start;
+            gap: 0;
+            width: 100%;
+            height: 100vh;
+            align-items: stretch;
+          }}
+          .sync-panel {{
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            background: #000;
           }}
           .sync-label {{
-            font-size: 18px;
+            position: absolute;
+            top: 10px;
+            left: 12px;
+            z-index: 3;
+            font-size: 14px;
             font-weight: 650;
-            margin: 0 0 6px;
-            color: #262730;
+            margin: 0;
+            color: #f9fafb;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+            pointer-events: none;
           }}
           .sync-video {{
             display: none;
@@ -470,20 +578,24 @@ def render_synced_videos(left_video, right_video, trial_id, participant_id):
           }}
           .video-crop {{
             width: 100%;
-            aspect-ratio: 4 / 3;
+            height: 100vh;
             overflow: hidden;
             background: #000;
           }}
           .sync-controls {{
+            position: absolute;
+            left: 50%;
+            bottom: 72px;
+            transform: translateX(-50%);
             display: flex;
             justify-content: center;
             gap: 10px;
-            margin: 8px 0 0;
+            z-index: 4;
           }}
           .sync-button {{
-            border: 1px solid #d0d5dd;
-            background: #ffffff;
-            color: #111827;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            background: rgba(17, 24, 39, 0.72);
+            color: #f9fafb;
             border-radius: 6px;
             font-size: 16px;
             font-weight: 600;
@@ -492,18 +604,22 @@ def render_synced_videos(left_video, right_video, trial_id, participant_id):
             min-width: 104px;
           }}
           .sync-button:hover {{
-            background: #f3f4f6;
+            background: rgba(31, 41, 55, 0.88);
           }}
           .timeline-wrap {{
+            position: absolute;
+            left: 50%;
+            bottom: 24px;
+            transform: translateX(-50%);
             display: grid;
-            grid-template-columns: 58px minmax(0, 1fr) 58px;
+            grid-template-columns: 58px minmax(0, 420px) 58px;
             align-items: center;
             gap: 10px;
-            margin: 7px auto 0;
-            max-width: 780px;
+            width: min(760px, calc(100vw - 32px));
+            z-index: 4;
           }}
           .time-label {{
-            color: #475467;
+            color: #e5e7eb;
             font-size: 13px;
             font-variant-numeric: tabular-nums;
             text-align: center;
@@ -518,32 +634,32 @@ def render_synced_videos(left_video, right_video, trial_id, participant_id):
             opacity: 0.45;
           }}
           .sync-status {{
+            position: absolute;
+            left: 50%;
+            bottom: 108px;
+            transform: translateX(-50%);
+            width: min(760px, calc(100vw - 32px));
             text-align: center;
-            color: #7f1d1d;
-            font-size: 14px;
+            color: #fecaca;
+            font-size: 13px;
             font-weight: 600;
-            margin-top: 3px;
-            margin-bottom: 0;
+            margin: 0;
+            z-index: 4;
           }}
           .sync-status.ready {{
-            color: #166534;
-          }}
-          @media (max-width: 900px) {{
-            .sync-grid {{
-              grid-template-columns: 1fr;
-            }}
+            color: #bbf7d0;
           }}
         </style>
         <div class="sync-wrap">
           <div class="sync-grid">
-            <div>
+            <div class="sync-panel">
               <div class="sync-label">{left_label}</div>
               <div class="video-crop">
                 <video id="video-a" class="sync-video" src="{left_uri}" preload="auto" playsinline></video>
                 <canvas id="canvas-a" class="sync-canvas"></canvas>
               </div>
             </div>
-            <div>
+            <div class="sync-panel">
               <div class="sync-label">{right_label}</div>
               <div class="video-crop">
                 <video id="video-b" class="sync-video" src="{right_uri}" preload="auto" playsinline></video>
@@ -573,7 +689,7 @@ def render_synced_videos(left_video, right_video, trial_id, participant_id):
             <span id="duration-time" class="time-label">0:00</span>
           </div>
           <div id="watch-status" class="sync-status">
-            Please watch both videos to the end at least once. The preference controls will unlock after full playback.
+            Press Play, then click the left or right side to choose the better video.
           </div>
         </div>
         <script>
@@ -590,10 +706,8 @@ def render_synced_videos(left_video, right_video, trial_id, participant_id):
           const elapsedTime = document.getElementById("elapsed-time");
           const durationTime = document.getElementById("duration-time");
           const status = document.getElementById("watch-status");
-          const trialKey = "watched_full_trial_{trial_key}";
           let syncing = false;
-          let watchedA = window.localStorage.getItem(trialKey) === "1";
-          let watchedB = window.localStorage.getItem(trialKey) === "1";
+          let playbackStarted = false;
           let renderLoop = null;
           let scrubbing = false;
 
@@ -686,67 +800,46 @@ def render_synced_videos(left_video, right_video, trial_id, participant_id):
             if (!scrubbing && d > 0) {{
               timeline.value = String(Math.round((t / d) * 1000));
             }}
-            timeline.disabled = !(watchedA && watchedB);
+            timeline.disabled = d <= 0;
             timeline.title = timeline.disabled
-              ? "The timeline is available after the first full playback."
+              ? "The timeline is available once the videos are loaded."
               : "Drag to replay or inspect a specific moment.";
           }}
 
-          function submitButtons() {{
-            const buttons = Array.from(window.parent.document.querySelectorAll("button"));
-            return buttons.filter((button) =>
-              button.innerText && (
-                button.innerText.includes("Save answer and go to next trial") ||
-                button.innerText.includes("Complete practice trial")
-              )
+          function choiceButtons() {{
+            return Array.from(
+              window.parent.document.querySelectorAll('button[kind="secondary"]')
             );
           }}
 
-          function ratingForms() {{
-            return submitButtons()
-              .map((button) =>
-                button.closest("form") ||
-                button.closest('[data-testid="stForm"]') ||
-                button.parentElement?.parentElement?.parentElement
-              )
-              .filter(Boolean);
-          }}
-
-          function setRatingVisible(visible) {{
-            ratingForms().forEach((form) => {{
-              form.style.display = visible ? "" : "none";
-            }});
-          }}
-
-          function setSubmitEnabled(enabled) {{
-            setRatingVisible(enabled);
-            submitButtons().forEach((button) => {{
+          function setChoiceEnabled(enabled) {{
+            choiceButtons().forEach((button) => {{
               button.disabled = !enabled;
-              button.style.opacity = enabled ? "1" : "0.45";
+              button.style.opacity = enabled ? "1" : "0.35";
               button.style.cursor = enabled ? "pointer" : "not-allowed";
-              button.title = enabled ? "" : "Please watch both full videos once before submitting.";
+              button.title = enabled
+                ? "Click the left or right side to choose the better video."
+                : "Press Play to start the videos before choosing.";
             }});
           }}
 
-          const formObserver = new MutationObserver(() => {{
-            setSubmitEnabled(watchedA && watchedB);
+          function enableChoicesAfterStart() {{
+            if (playbackStarted) {{
+              return;
+            }}
+            playbackStarted = true;
+            status.textContent = "Click the left or right side to choose the better video.";
+            status.classList.add("ready");
+            setChoiceEnabled(true);
+          }}
+
+          const choiceObserver = new MutationObserver(() => {{
+            setChoiceEnabled(playbackStarted);
           }});
-          formObserver.observe(window.parent.document.body, {{
+          choiceObserver.observe(window.parent.document.body, {{
             childList: true,
             subtree: true,
           }});
-
-          function markWatchedIfDone() {{
-            if (watchedA && watchedB) {{
-              window.localStorage.setItem(trialKey, "1");
-              status.textContent = "Playback completed. You can replay or scrub the timeline before saving.";
-              status.classList.add("ready");
-              setSubmitEnabled(true);
-            }} else {{
-              setSubmitEnabled(false);
-            }}
-            updateTimeline();
-          }}
 
           function setTime(t) {{
             syncing = true;
@@ -810,6 +903,7 @@ def render_synced_videos(left_video, right_video, trial_id, participant_id):
               const t = bothVideosEnded() ? 0 : Math.min(a.currentTime || 0, b.currentTime || 0);
               setTime(t);
               await Promise.allSettled([a.play(), b.play()]);
+              enableChoicesAfterStart();
               setButton(true);
               startRenderLoop();
               updateTimeline();
@@ -830,51 +924,16 @@ def render_synced_videos(left_video, right_video, trial_id, participant_id):
           }}
           a.addEventListener("ended", updateButton);
           b.addEventListener("ended", updateButton);
-          a.addEventListener("ended", () => {{
-            watchedA = true;
-            renderVideos();
-            markWatchedIfDone();
-          }});
-          b.addEventListener("ended", () => {{
-            watchedB = true;
-            renderVideos();
-            markWatchedIfDone();
-          }});
+          a.addEventListener("ended", renderVideos);
+          b.addEventListener("ended", renderVideos);
 
-          window.setInterval(() => {{
-            if (window.localStorage.getItem(trialKey) === "1") {{
-              setSubmitEnabled(true);
-            }} else {{
-              setSubmitEnabled(false);
-            }}
-          }}, 500);
+          setChoiceEnabled(false);
           renderVideos();
           updateTimeline();
-          markWatchedIfDone();
         </script>
         """,
-        height=680,
+        height=1000,
     )
-
-
-def render_rating_form(trial, button_label, key_prefix):
-    widget_key = f"{key_prefix}_{trial['trial_id']}"
-    with st.form(key=f"trial_form_{widget_key}"):
-        choice = st.radio(
-            "Which video has better overall visual quality?",
-            [
-                "Video A is better",
-                "Video B is better",
-            ],
-            index=None,
-            horizontal=True,
-            key=f"choice_{widget_key}",
-        )
-
-        submitted = st.form_submit_button(button_label, type="primary")
-
-    artifact_tags = []
-    return choice, artifact_tags, submitted
 
 
 def pilot_method_label(trial, method):
@@ -1134,10 +1193,10 @@ if st.session_state.phase == "instructions":
         """
         In each trial, you will see two videos: **Video A** and **Video B**.
 
-        Please choose which video has better overall visual quality. You
-        **MUST** choose either Video A or Video B. You may replay the videos
-        multiple times by pressing the **Play** button before submitting your
-        choice. After you submit your choice, you can **NOT** go back to the
+        Please choose which video has better overall visual quality by clicking
+        the **left half** (Video A) or **right half** (Video B) of the screen.
+        You may replay the videos multiple times by pressing the **Play** button
+        before making your choice. After you choose, you can **NOT** go back to the
         previous pair.
 
         Please use a laptop or desktop screen, not a phone or tablet. The
@@ -1262,27 +1321,21 @@ if st.session_state.phase == "practice":
     practice_total = len(st.session_state.practice_trials)
     practice_index = min(st.session_state.practice_runs, practice_total - 1)
     practice_trial = dict(st.session_state.practice_trials[practice_index])
-    st.info("Practice trial. This response will **NOT** be saved in the study results.")
-    st.subheader(f"Practice trial {practice_index + 1} / {practice_total}")
+    inject_trial_layout_css()
+    st.markdown(
+        f'<div class="trial-chrome"><small>Practice trial {practice_index + 1} / {practice_total}</small></div>',
+        unsafe_allow_html=True,
+    )
 
-    render_synced_videos(
+    choice, artifact_tags, submitted = render_trial_screen(
         practice_trial["left_video"],
         practice_trial["right_video"],
         f"practice_{st.session_state.practice_runs + 1}_{practice_trial['trial_id']}",
         st.session_state.participant_id,
-    )
-
-    choice, artifact_tags, submitted = render_rating_form(
-        practice_trial,
-        "Complete practice trial",
         f"practice_{st.session_state.practice_runs + 1}",
     )
 
     if submitted:
-        if choice is None:
-            st.warning("Please select an answer before continuing.")
-            st.stop()
-
         st.session_state.practice_runs += 1
         st.session_state.phase = "practice_transition"
         st.session_state.trial_start_time = time.time()
@@ -1296,29 +1349,22 @@ if trial_index >= num_trials:
 
 trial = trials[trial_index]
 
+inject_trial_layout_css()
+st.markdown('<div class="trial-chrome">', unsafe_allow_html=True)
 st.progress((trial_index + 1) / num_trials)
 st.subheader(f"Trial {trial_index + 1} / {num_trials}")
-
 render_pilot_trial_labels(trial)
+st.markdown("</div>", unsafe_allow_html=True)
 
-render_synced_videos(
+choice, artifact_tags, submitted = render_trial_screen(
     trial["left_video"],
     trial["right_video"],
     trial["trial_id"],
     st.session_state.participant_id,
-)
-
-choice, artifact_tags, submitted = render_rating_form(
-    trial,
-    "Save answer and go to next trial",
-    "real",
+    f"real_{trial_index}",
 )
 
 if submitted:
-    if choice is None:
-        st.warning("Please select an answer before continuing.")
-        st.stop()
-
     time_used = time.time() - st.session_state.trial_start_time
     chosen_method = get_chosen_method(
         choice,

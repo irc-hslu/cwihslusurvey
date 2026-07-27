@@ -1,5 +1,6 @@
+hslu/
 # Streamlit secrets (sensitive credentials)
-.streamlit/config.toml
+.streamlit\config.toml
 
 # Python
 __pycache__/
