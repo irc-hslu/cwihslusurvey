@@ -402,7 +402,7 @@ def inject_trial_layout_css():
           }
           button[kind="secondary"] {
             width: 100%;
-            height: 100vh !important;
+            height: 97vh !important;
             position: absolute !important;
             top: 0 !important;
             z-index: 9999 !important;
