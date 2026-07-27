@@ -400,24 +400,25 @@ def inject_trial_layout_css():
           div[data-testid="column"] {
             position: relative;
           }
-          div[data-testid="column"] button[kind="secondary"] {
+          button[kind="secondary"] {
             width: 100%;
             height: 100vh !important;
             position: absolute !important;
             top: 0 !important;
-            left: 0 !important;
             z-index: 9999 !important;
             display: flex !important;
             max-width: 100% !important;
-            background: none !important;
-            border: 3px solid rgba(128, 128, 128, 0.45) !important;
-            color: transparent !important;
+            background: none;
+            border: 3px solid gray;
           }
-          div[data-testid="column"] button[kind="secondary"]:hover:not(:disabled) {
-            background: rgba(255, 255, 255, 0.04) !important;
-            border: 4px solid rgba(220, 38, 38, 0.85) !important;
+          button[kind="secondary"]:hover {
+            background: none;
+            border: 4px solid red;
           }
-          div[data-testid="column"] button[kind="secondary"]:disabled {
+          button[kind="secondary"]:focus {
+            background: none;
+          }
+          button[kind="secondary"]:disabled {
             opacity: 0.35 !important;
             cursor: not-allowed !important;
           }
@@ -519,7 +520,6 @@ def render_synced_videos(left_video, right_video, trial_id, participant_id):
     right_uri = video_data_uri(right_video, os.path.getmtime(right_video))
     left_label = html.escape("Video A")
     right_label = html.escape("Video B")
-    trial_key = html.escape(f"{participant_id}_{trial_id}")
 
     components.html(
         f"""
@@ -582,30 +582,6 @@ def render_synced_videos(left_video, right_video, trial_id, participant_id):
             overflow: hidden;
             background: #000;
           }}
-          .sync-controls {{
-            position: absolute;
-            left: 50%;
-            bottom: 72px;
-            transform: translateX(-50%);
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            z-index: 4;
-          }}
-          .sync-button {{
-            border: 1px solid rgba(255, 255, 255, 0.35);
-            background: rgba(17, 24, 39, 0.72);
-            color: #f9fafb;
-            border-radius: 6px;
-            font-size: 16px;
-            font-weight: 600;
-            padding: 9px 18px;
-            cursor: pointer;
-            min-width: 104px;
-          }}
-          .sync-button:hover {{
-            background: rgba(31, 41, 55, 0.88);
-          }}
           .timeline-wrap {{
             position: absolute;
             left: 50%;
@@ -636,7 +612,7 @@ def render_synced_videos(left_video, right_video, trial_id, participant_id):
           .sync-status {{
             position: absolute;
             left: 50%;
-            bottom: 108px;
+            bottom: 72px;
             transform: translateX(-50%);
             width: min(760px, calc(100vw - 32px));
             text-align: center;
@@ -655,23 +631,17 @@ def render_synced_videos(left_video, right_video, trial_id, participant_id):
             <div class="sync-panel">
               <div class="sync-label">{left_label}</div>
               <div class="video-crop">
-                <video id="video-a" class="sync-video" src="{left_uri}" preload="auto" playsinline></video>
+                <video id="video-a" class="sync-video" src="{left_uri}" preload="auto" autoplay loop muted playsinline></video>
                 <canvas id="canvas-a" class="sync-canvas"></canvas>
               </div>
             </div>
             <div class="sync-panel">
               <div class="sync-label">{right_label}</div>
               <div class="video-crop">
-                <video id="video-b" class="sync-video" src="{right_uri}" preload="auto" playsinline></video>
+                <video id="video-b" class="sync-video" src="{right_uri}" preload="auto" autoplay loop muted playsinline></video>
                 <canvas id="canvas-b" class="sync-canvas"></canvas>
               </div>
             </div>
-          </div>
-          <div class="sync-controls">
-            <button id="play-pause" class="sync-button" type="button" aria-label="Play both videos">
-              <span id="play-pause-icon">▶</span>
-              <span id="play-pause-text">Play</span>
-            </button>
           </div>
           <div class="timeline-wrap">
             <span id="elapsed-time" class="time-label">0:00</span>
@@ -688,8 +658,8 @@ def render_synced_videos(left_video, right_video, trial_id, participant_id):
             />
             <span id="duration-time" class="time-label">0:00</span>
           </div>
-          <div id="watch-status" class="sync-status">
-            Press Play, then click the left or right side to choose the better video.
+          <div id="watch-status" class="sync-status ready">
+            Click the left or right side to choose the better video.
           </div>
         </div>
         <script>
@@ -699,17 +669,17 @@ def render_synced_videos(left_video, right_video, trial_id, participant_id):
           const canvasB = document.getElementById("canvas-b");
           const ctxA = canvasA.getContext("2d", {{ willReadFrequently: true }});
           const ctxB = canvasB.getContext("2d", {{ willReadFrequently: true }});
-          const playPause = document.getElementById("play-pause");
-          const playPauseIcon = document.getElementById("play-pause-icon");
-          const playPauseText = document.getElementById("play-pause-text");
           const timeline = document.getElementById("video-timeline");
           const elapsedTime = document.getElementById("elapsed-time");
           const durationTime = document.getElementById("duration-time");
-          const status = document.getElementById("watch-status");
           let syncing = false;
-          let playbackStarted = false;
           let renderLoop = null;
           let scrubbing = false;
+
+          a.loop = true;
+          b.loop = true;
+          a.muted = true;
+          b.muted = true;
 
           function resizeCanvas(canvas) {{
             const rect = canvas.getBoundingClientRect();
@@ -764,19 +734,15 @@ def render_synced_videos(left_video, right_video, trial_id, participant_id):
             if (renderLoop) return;
             const tick = () => {{
               renderVideos();
-              if (!a.paused || !b.paused) {{
-                renderLoop = window.requestAnimationFrame(tick);
-              }} else {{
-                renderLoop = null;
-              }}
+              renderLoop = window.requestAnimationFrame(tick);
             }};
             renderLoop = window.requestAnimationFrame(tick);
           }}
 
-          function setButton(isPlaying) {{
-            playPauseIcon.textContent = isPlaying ? "■" : "▶";
-            playPauseText.textContent = isPlaying ? "Stop" : "Play";
-            playPause.setAttribute("aria-label", isPlaying ? "Stop both videos" : "Play both videos");
+          async function startPlayback() {{
+            await Promise.allSettled([a.play(), b.play()]);
+            startRenderLoop();
+            setChoiceEnabled(true);
           }}
 
           function formatTime(seconds) {{
@@ -817,24 +783,12 @@ def render_synced_videos(left_video, right_video, trial_id, participant_id):
               button.disabled = !enabled;
               button.style.opacity = enabled ? "1" : "0.35";
               button.style.cursor = enabled ? "pointer" : "not-allowed";
-              button.title = enabled
-                ? "Click the left or right side to choose the better video."
-                : "Press Play to start the videos before choosing.";
+              button.title = "Click the left or right side to choose the better video.";
             }});
           }}
 
-          function enableChoicesAfterStart() {{
-            if (playbackStarted) {{
-              return;
-            }}
-            playbackStarted = true;
-            status.textContent = "Click the left or right side to choose the better video.";
-            status.classList.add("ready");
-            setChoiceEnabled(true);
-          }}
-
           const choiceObserver = new MutationObserver(() => {{
-            setChoiceEnabled(playbackStarted);
+            setChoiceEnabled(true);
           }});
           choiceObserver.observe(window.parent.document.body, {{
             childList: true,
@@ -849,10 +803,6 @@ def render_synced_videos(left_video, right_video, trial_id, participant_id):
             window.setTimeout(() => {{ syncing = false; }}, 80);
           }}
 
-          function bothVideosEnded() {{
-            return a.ended && b.ended;
-          }}
-
           function syncFrom(source, target) {{
             if (syncing) return;
             if (Math.abs(source.currentTime - target.currentTime) > 0.25) {{
@@ -865,17 +815,24 @@ def render_synced_videos(left_video, right_video, trial_id, participant_id):
           b.addEventListener("seeked", () => syncFrom(b, a));
           a.addEventListener("seeked", renderVideos);
           b.addEventListener("seeked", renderVideos);
-          a.addEventListener("loadeddata", renderVideos);
+          a.addEventListener("loadeddata", () => {{
+            renderVideos();
+            startPlayback();
+          }});
           b.addEventListener("loadeddata", renderVideos);
           a.addEventListener("loadedmetadata", () => {{
             renderVideos();
             updateTimeline();
+            startPlayback();
           }});
           b.addEventListener("loadedmetadata", () => {{
             renderVideos();
             updateTimeline();
           }});
-          a.addEventListener("timeupdate", updateTimeline);
+          a.addEventListener("timeupdate", () => {{
+            syncFrom(a, b);
+            updateTimeline();
+          }});
           b.addEventListener("timeupdate", updateTimeline);
           window.addEventListener("resize", renderVideos);
 
@@ -885,51 +842,22 @@ def render_synced_videos(left_video, right_video, trial_id, participant_id):
             const d = duration();
             const t = d * (Number(timeline.value) / 1000);
             elapsedTime.textContent = formatTime(t);
-            a.pause();
-            b.pause();
-            setButton(false);
             setTime(t);
             renderVideos();
           }});
 
-          timeline.addEventListener("change", () => {{
+          timeline.addEventListener("change", async () => {{
             scrubbing = false;
             updateTimeline();
             renderVideos();
+            await Promise.allSettled([a.play(), b.play()]);
+            startRenderLoop();
           }});
 
-          playPause.addEventListener("click", async () => {{
-            if (a.paused && b.paused) {{
-              const t = bothVideosEnded() ? 0 : Math.min(a.currentTime || 0, b.currentTime || 0);
-              setTime(t);
-              await Promise.allSettled([a.play(), b.play()]);
-              enableChoicesAfterStart();
-              setButton(true);
-              startRenderLoop();
-              updateTimeline();
-            }} else {{
-              a.pause();
-              b.pause();
-              setButton(false);
-              renderVideos();
-              updateTimeline();
-            }}
-          }});
-
-          function updateButton() {{
-            if (a.paused && b.paused) {{
-              setButton(false);
-              updateTimeline();
-            }}
-          }}
-          a.addEventListener("ended", updateButton);
-          b.addEventListener("ended", updateButton);
-          a.addEventListener("ended", renderVideos);
-          b.addEventListener("ended", renderVideos);
-
-          setChoiceEnabled(false);
+          setChoiceEnabled(true);
           renderVideos();
           updateTimeline();
+          startPlayback();
         </script>
         """,
         height=1000,
@@ -1195,8 +1123,7 @@ if st.session_state.phase == "instructions":
 
         Please choose which video has better overall visual quality by clicking
         the **left half** (Video A) or **right half** (Video B) of the screen.
-        You may replay the videos multiple times by pressing the **Play** button
-        before making your choice. After you choose, you can **NOT** go back to the
+        The videos loop automatically. After you choose, you can **NOT** go back to the
         previous pair.
 
         Please use a laptop or desktop screen, not a phone or tablet. The
@@ -1352,8 +1279,8 @@ trial = trials[trial_index]
 inject_trial_layout_css()
 st.markdown('<div class="trial-chrome">', unsafe_allow_html=True)
 st.progress((trial_index + 1) / num_trials)
-st.subheader(f"Trial {trial_index + 1} / {num_trials}")
-render_pilot_trial_labels(trial)
+#st.subheader(f"Trial {trial_index + 1} / {num_trials}")
+#render_pilot_trial_labels(trial)
 st.markdown("</div>", unsafe_allow_html=True)
 
 choice, artifact_tags, submitted = render_trial_screen(
