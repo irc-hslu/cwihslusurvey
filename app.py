@@ -1277,11 +1277,11 @@ if trial_index >= num_trials:
 trial = trials[trial_index]
 
 inject_trial_layout_css()
-st.markdown('<div class="trial-chrome">', unsafe_allow_html=True)
-st.progress((trial_index + 1) / num_trials)
+#st.markdown('<div class="trial-chrome">', unsafe_allow_html=True)
+#st.progress((trial_index + 1) / num_trials)
 #st.subheader(f"Trial {trial_index + 1} / {num_trials}")
 #render_pilot_trial_labels(trial)
-st.markdown("</div>", unsafe_allow_html=True)
+#st.markdown("</div>", unsafe_allow_html=True)
 
 choice, artifact_tags, submitted = render_trial_screen(
     trial["left_video"],
