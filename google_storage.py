@@ -157,7 +157,6 @@ def append_row(worksheet_name: str, row: dict, columns: list[str]) -> None:
         value_input_option="USER_ENTERED",
     )
 
-
 def save_participant_json(participant_id: str, participant_data: dict) -> None:
     worksheet = _worksheet(WORKSHEET_PARTICIPANTS, headers=PARTICIPANT_JSON_COLUMNS)
     row = {
@@ -177,3 +176,4 @@ def save_participant_json(participant_id: str, participant_data: dict) -> None:
         )
     else:
         worksheet.append_row(values, value_input_option="USER_ENTERED")
+

@@ -199,11 +199,11 @@ def persist_study_data(
             demographics_row,
             demographics_columns,
         )
-    if participant_data is not None:
-        google_storage.save_participant_json(
-            participant_data["participant_id"],
-            participant_data,
-        )
+    #if participant_data is not None:
+    #    google_storage.save_participant_json(
+    #        participant_data["participant_id"],
+    #        participant_data,
+    #    )
 
 
 def prepare_trial_rows(trial_rows, shuffle_rows):
