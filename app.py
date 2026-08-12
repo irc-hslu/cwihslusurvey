@@ -987,6 +987,8 @@ def render_demographics_form():
         "South Korea",
         "Spain",
         "South America",
+        "Switzerland",
+        "Turkey",
         "United Kingdom",
         "United States",
         "Other",
